@@ -4,10 +4,10 @@ require('dotenv').config();
 const bodyParser = require('body-parser');
 const cors = require('cors');
 
-const User = require('../src/db/schema/user')
-const DashboardUser = require('../src/db/schema/dashboardUser')
+const User = require('./src/db/schema/user')
+const DashboardUser = require('./src/db/schema/dashboardUser')
 
-const fetchuser = require('../src/middleware/fetchUser')
+const fetchuser = require('./src/middleware/fetchUser')
 
 const mongoose = require('mongoose')
 const bcrypt = require('bcryptjs');
@@ -15,17 +15,28 @@ const jwt = require('jsonwebtoken');
 
 const JWT_SECRET = process.env.JWT_SECRET;
 const mongoURL = process.env.MONGO_URI
+const PORT = process.env.MONGO_URI
 
 const app = express();
 
 // Middleware
-app.use(cors());
+app.use(cors(
+    {
+        origin:['https://user-flow.netlify.app'],
+        methods: ['POST','GET','PUT','DELETE'],
+        credentials: true
+    }
+));
 app.use(bodyParser.json());
 
 // for connecting to database
 await mongoose.connect(mongoURL,{dbName:'UserFlow'});
 
-app.post('/api/signup',async (req,res)=>{
+app.get('/',(req,res)=>{
+    res.send('Hello world')
+})
+
+app.post('/signup',async (req,res)=>{
     try{
         const data = await User.findOne({email:req.body.email});
         if(data){
@@ -48,7 +59,7 @@ app.post('/api/signup',async (req,res)=>{
     }
 })
 
-app.post('/api/login', async (req,res)=>{
+app.post('/login', async (req,res)=>{
     try{
         const existUser = await User.findOne({email:req.body.email});
         if(!existUser){
@@ -67,7 +78,7 @@ app.post('/api/login', async (req,res)=>{
     }
 })
 
-app.post('/api/adduser', fetchuser ,async (req,res)=>{
+app.post('/adduser', fetchuser ,async (req,res)=>{
     try{
         req.body.parentUserId = req.userID
         const newUser = new DashboardUser(req.body)
@@ -80,7 +91,7 @@ app.post('/api/adduser', fetchuser ,async (req,res)=>{
     }
 })
 
-app.get('/api/dashuser',fetchuser,async (req, res)=>{
+app.get('/dashuser',fetchuser,async (req, res)=>{
     try{
         let user = await DashboardUser.find({parentUserId:req.userID})
         res.status(200).send({user})
@@ -89,7 +100,7 @@ app.get('/api/dashuser',fetchuser,async (req, res)=>{
         res.status(500).send({"error":'Internal server error'});
     }
 })
-app.put('/api/update',fetchuser,async (req, res)=>{
+app.put('/update',fetchuser,async (req, res)=>{
     try{
         const userId = req.header('userid');
         let user = await DashboardUser.findByIdAndUpdate(userId,req.body)
@@ -99,7 +110,7 @@ app.put('/api/update',fetchuser,async (req, res)=>{
         res.status(500).send({"error":'Internal server error'});
     }
 })
-app.delete('/api/delete',fetchuser,async (req, res)=>{
+app.delete('/delete',fetchuser,async (req, res)=>{
     try{
         const userId = req.header('userid');
         let user = await DashboardUser.findByIdAndDelete(userId)
@@ -110,4 +121,6 @@ app.delete('/api/delete',fetchuser,async (req, res)=>{
     }
 })
 
-module.exports = app;
+app.listen(PORT,()=>{
+    console.log('server is running')
+})
