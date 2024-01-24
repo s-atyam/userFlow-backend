@@ -30,7 +30,7 @@ app.use(cors(
 app.use(bodyParser.json());
 
 // for connecting to database
-await mongoose.connect(mongoURL,{dbName:'UserFlow'});
+mongoose.connect(mongoURL,{dbName:'UserFlow'});
 
 app.get('/',(req,res)=>{
     res.send('Hello world')
